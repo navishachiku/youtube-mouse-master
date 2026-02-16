@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Mouse Master
 // @namespace    https://github.com/navishachiku/youtube-mouse-master
-// @version      0.2
+// @version      0.3
 // @description  High-performance YouTube player interaction script: support three-zone control, progress seek, prevent event penetration, high-frequency wheel filtering, and fix OSD timer conflicts.
 // @author       navishachiku & Gemini
 // @match        *://www.youtube.com/*
@@ -18,7 +18,7 @@
      */
     const SETTINGS = {
         DEBUG: false,                  // Whether to output debug messages to the console
-        ZONE_TOGGLE_KEY: 'F9',         // Hotkey to toggle zone visibility
+        ZONE_TOGGLE_KEY: 'F9',     // Hotkey to toggle zone visibility
 
         // OSD prompt settings
         OSD_DURATION: 800,             // Time OSD prompt stays on screen (ms)
@@ -26,17 +26,11 @@
         OSD_FONT_SIZE: '28px',         // Font size of OSD prompt text (supports px, em, rem, etc.)
 
         // Wheel filtering settings
-        // Optimization for Mac/MOS/Trackpad or software like Smooth Scroll (Mos, Logitech Options+)
-        USE_WHEEL_COUNT_FIXED: true,   // Whether to enable fixed wheel count filtering
+        // If you are using Mac/MOS/Trackpad or software like Smooth Scroll (Mos, Logitech Options+), set USE_WHEEL_COUNT_FIXED to true
+        USE_WHEEL_COUNT_FIXED: false,  // Whether to enable fixed wheel count filtering
         WHEEL_DELAY: 1,                // Debounce delay time for wheel events (ms)
         WHEEL_COUNT_THRESHOLD: 14,     // Wheel count trigger threshold: how many wheel events to accumulate before performing an action
     };
-
-    function log(...args) {
-        if (SETTINGS.DEBUG) console.log('[YTM Debug]', ...args);
-    }
-
-    log('Script loaded, preparing for initialization...');
 
     /**
      * [Configuration] CONFIG
@@ -45,45 +39,51 @@
     const CONFIG = [
         // Default configuration, you can modify it as you like
         {
-            name: "Left_Area",
+            name: "Left Area",
             color: "rgba(255, 0, 0, 0.2)", // Red: Volume area
             size: { width: "30%", height: "100%" },
             offset: { x: "0%", y: "0%" },
             mouse_action: {
-                left_click: { action: "volume_set", value: 0 },   // Left click: Volume 0
-                right_click: { action: "volume_set", value: 100 }, // Right click: Volume 100
-                middle_click: { action: "none" },
-                wheel_up: { action: "volume_up", value: 5 },
-                wheel_down: { action: "volume_down", value: 5 }
+                left_click: { action: "volume_set", value: 100 },   // Left click: Volume 100
+                right_click: { action: "volume_set", value: 0 },    // Right click: Volume 0
+                middle_click: { action: "none" },                   // Pass-through
+                wheel_up: { action: "volume_up", value: 5 },        // Wheel up: Volume +5%
+                wheel_down: { action: "volume_down", value: 5 }     // Wheel down: Volume -5%
             }
         },
         {
-            name: "Middle_Area",
+            name: "Middle Area",
             color: "rgba(0, 255, 0, 0.2)", // Green: Progress area
             size: { width: "40%", height: "100%" },
             offset: { x: "30%", y: "0%" },
             mouse_action: {
-                left_click: { action: "toggle_play_pause" },     // Left click: Play/Pause
-                right_click: { action: "none" },                  // Right click: Allow (Native menu)
-                middle_click: { action: "none" },
+                left_click: { action: "none" },                   // Pass-through
+                right_click: { action: "none" },                  // Pass-through
+                middle_click: { action: "none" },                 // Pass-through
                 wheel_up: { action: "seek", value: -5 },          // Wheel up: Seek back 5s
                 wheel_down: { action: "seek", value: 5 }          // Wheel down: Seek forward 5s
             }
         },
         {
-            name: "Right_Area",
+            name: "Right Area",
             color: "rgba(0, 0, 255, 0.2)", // Blue: Speed area
             size: { width: "30%", height: "100%" },
             offset: { x: "70%", y: "0%" },
             mouse_action: {
-                left_click: { action: "speed_set", value: 2.0 },   // Left click: 2x
-                right_click: { action: "speed_set", value: 1.0 },  // Right click: 1x
-                middle_click: { action: "none" },
-                wheel_up: { action: "speed_up", value: 0.25 },
-                wheel_down: { action: "speed_down", value: 0.25 }
+                left_click: { action: "speed_set", value: 2.0 },    // Left click: 2x
+                right_click: { action: "speed_set", value: 1.0 },   // Right click: 1x
+                middle_click: { action: "none" },                   // Pass-through
+                wheel_up: { action: "speed_up", value: 0.25 },      // Wheel up: Speed +0.25x
+                wheel_down: { action: "speed_down", value: 0.25 }   // Wheel down: Speed -0.25x
             }
         }
     ];
+
+    function log(...args) {
+        if (SETTINGS.DEBUG) console.log('[YTM Debug]', ...args);
+    }
+
+    log('Script loaded, preparing for initialization...');
 
     // State variables
     let lastWheelTime = 0;
@@ -294,7 +294,10 @@
 
         const target = e.target;
         const validSurface = target.closest('.html5-main-video, .ytp-player-content, .html5-video-player, .ytp-iv-video-content, .ytp-upnext, #movie_player');
-        const isNativeUI = target.closest('.ytp-chrome-bottom, .ytp-settings-menu, .ytp-top-share-button, .ytp-ad-overlay-container, .ytp-playlist-menu');
+        
+        // Exclude native UI elements to prevent conflicts
+        // Added .ytp-miniplayer-ui and related classes to fix issue with miniplayer controls
+        const isNativeUI = target.closest('.ytp-chrome-bottom, .ytp-settings-menu, .ytp-top-share-button, .ytp-ad-overlay-container, .ytp-playlist-menu, .ytp-miniplayer-ui, .ytp-miniplayer-scrim, .ytp-miniplayer-close-button, .ytp-miniplayer-expand-button, .ytp-button, button');
 
         if (!validSurface || isNativeUI) return null;
 
@@ -443,7 +446,7 @@
         if (e.key === SETTINGS.ZONE_TOGGLE_KEY) {
             isZonesVisible = !isZonesVisible;
             updateZoneVisuals();
-            showOSD(isZonesVisible ? "🕵️ Zones Visible" : "🕵️ Zones Hidden");
+            showOSD(isZonesVisible ? "👀 Zones Visible" : "🙈 Zones Hidden");
         }
     });
 

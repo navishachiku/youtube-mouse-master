@@ -1,5 +1,9 @@
 # YouTube Mouse Master
 
+[English](./README.md) | [繁體中文](./docs/zh-tc.md) | [简体中文](./docs/zh-sc.md) | [日本語](./docs/jp.md) | [Español](./docs/es.md) | [한국어](./docs/ko.md) | [Português](./docs/pt.md)
+
+[![Install on GreasyFork](https://img.shields.io/badge/Install%20on-GreasyFork-brightgreen?style=for-the-badge&logo=greasyfork)](https://greasyfork.org/en/scripts/566499-youtube-mouse-master)
+
 An interaction enhancement script for the YouTube player designed for power users. This is a deeply optimized, zero-overlay, and highly customizable Tampermonkey script.
 
 ## ✨ Key Features
@@ -12,7 +16,7 @@ An interaction enhancement script for the YouTube player designed for power user
 
 * **Mac / High-Frequency Wheel Optimization**: Built-in filtering mechanism perfectly adapts to MOS, SmoothScroll, or Mac trackpads, preventing over-sensitive jumps during operation.
 
-![DEMO SCREENSHOT](./demo.jpeg)
+![DEMO SCREENSHOT](./docs/demo.jpeg)
 
 ## ⚙️ Customizable Parameters
 
@@ -27,7 +31,7 @@ You can adjust settings directly in the `SETTINGS` and `CONFIG` blocks at the to
 | `OSD_DURATION` | How long OSD prompts stay on screen (ms) | `800` |
 | `OSD_FADE_OUT` | Duration of OSD fade-out animation (ms) | `150` |
 | `OSD_FONT_SIZE` | Font size of OSD prompt text (supports px, em, rem, etc.) | `28px` |
-| `USE_WHEEL_COUNT_FIXED` | Whether to enable fixed wheel count filtering (Recommended for Mac users) | `true` |
+| `USE_WHEEL_COUNT_FIXED` | Whether to enable fixed wheel count filtering (Recommended for Mac users) | `false` |
 | `WHEEL_DELAY` | Debounce delay time for wheel events (ms) | `1` |
 | `WHEEL_COUNT_THRESHOLD` | Wheel count trigger threshold: how many wheel events to accumulate before performing an action | `14` |
 
@@ -39,7 +43,7 @@ Default provides Left, Middle, and Right zone configurations:
 
 | Zone | Left Click | Right Click | Wheel Action |
 | ----- | ----- | ----- | ----- |
-| **Left (Volume)** | Quick Mute (0%) | Max Volume (100%) | Volume Step +/- 5% |
+| **Left (Volume)** | Max Volume (100%) | Quick Mute (0%) | Volume Step +/- 5% |
 | **Middle (Progress)** | Pass-through (Native Play/Pause) | Pass-through (Native Menu) | Seek +/- 5s |
 | **Right (Speed)** | Quick 2.0x | Reset 1.0x | Speed Step +/- 0.25x |
 
@@ -62,14 +66,14 @@ In `mouse_action`, the `action` types you can use are as follows:
 
 ## 📦 Installation
 
-1. Install the browser extension: [Tampermonkey](https://www.tampermonkey.net/).
+**Method 1: One-Click Installation (Recommended)**
 
-2. Click "Create a new script".
+1. Install the [Tampermonkey](https://www.tampermonkey.net/) browser extension.
+2. Visit the **[GreasyFork Script Page](https://greasyfork.org/en/scripts/566499-youtube-mouse-master)**.
+3. Click the **"Install this script"** button.
 
-3. Copy and paste the contents of `YouTubeMouseMaster.user.js`.
+**Method 2: Manual Installation**
 
-4. Save and open YouTube to enjoy the ultimate interaction!
-
-## 🛠 Debug Mode
-
-If you want to confirm the sensor zone range, set `SHOW_ZONES` to `true` in the script. Semi-transparent colored blocks will appear on the player to help you adjust the proportions to your liking.
+1. Create a "New Script" in Tampermonkey.
+2. Copy and paste the content of `YouTubeMouseMaster.user.js`.
+3. Save and enjoy!
