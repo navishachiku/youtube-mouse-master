@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Mouse Master
 // @namespace    https://github.com/navishachiku/youtube-mouse-master
-// @version      0.4
+// @version      0.5
 // @description  High-performance YouTube player interaction script: support three-zone control, progress seek, prevent event penetration, high-frequency wheel filtering, and fix OSD timer conflicts.
 // @author       navishachiku & Gemini
 // @match        *://www.youtube.com/*
@@ -79,6 +79,11 @@
         }
     ];
 
+    /**
+     * Log debug messages to the console if debugging is enabled.
+     * 
+     * @param {...any} args The messages or objects to log.
+     */
     function log(...args) {
         if (SETTINGS.DEBUG) console.log('[YTM Debug]', ...args);
     }
@@ -95,6 +100,14 @@
 
     // --- Helper functions ---
 
+    /**
+     * Parse a coordinate value which might be a percentage string or a number.
+     * 
+     * @param {string|number} val The coordinate value (e.g., "50%", 0.5).
+     * @param {number} total The total size of the container (used for relative calculations).
+     * 
+     * @returns {number} The parsed coordinate as a decimal ratio (0 to 1).
+     */
     const parseCoord = (val, total) => {
         if (typeof val === 'string' && val.includes('%')) {
             return parseFloat(val) / 100;
@@ -102,7 +115,13 @@
         return parseFloat(val) / total;
     };
 
-    // Format seconds to mm:ss or hh:mm:ss
+    /**
+     * Format seconds into a time string (mm:ss or hh:mm:ss).
+     * 
+     * @param {number} seconds The time in seconds.
+     * 
+     * @returns {string} The formatted time string.
+     */
     const formatTime = (seconds) => {
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
@@ -112,6 +131,11 @@
         return parts.join(':');
     };
 
+    /**
+     * Create or retrieve the OSD (On-Screen Display) element.
+     * 
+     * @returns {HTMLElement} The OSD DOM element.
+     */
     const createOSD = () => {
         let el = document.getElementById('yt-mouse-master-osd');
         if (!el) {
@@ -145,7 +169,9 @@
     };
 
     /**
-     * Helper: Find the active Shorts renderer in the viewport
+     * Find the active Shorts video renderer currently visible in the viewport.
+     * 
+     * @returns {HTMLElement|null} The active 'ytd-reel-video-renderer' element or null if none found.
      */
     const findActiveShortsRenderer = () => {
         const renderers = document.querySelectorAll('ytd-reel-video-renderer');
@@ -170,7 +196,10 @@
     };
 
     /**
-     * Show OSD message
+     * Display the OSD with the specified text.
+     * Handles positioning for both normal player and Shorts player.
+     * 
+     * @param {string} text The message to display on the OSD.
      */
     const showOSD = (text) => {
         const el = createOSD();
@@ -250,6 +279,10 @@
 
     let zoneMonitorInterval = null;
 
+    /**
+     * Update or redraw the debug zone visuals.
+     * Manages overlay creation, positioning, and monitoring loop for Shorts.
+     */
     function updateZoneVisuals() {
         // Remove existing zones
         document.querySelectorAll('.ytm-debug-zone').forEach(el => el.remove());
@@ -456,6 +489,14 @@
         });
     }
 
+    /**
+     * Determine which interaction zone (if any) contains the mouse event.
+     * Handles complex logic for nested players, Shorts, and overlay exclusions.
+     * 
+     * @param {Event} e The mouse or wheel event.
+     * 
+     * @returns {{zone: Object, player: HTMLElement}|null} The target zone and associated player, or null.
+     */
     function getTargetZone(e) {
         const target = e.target;
         
@@ -555,6 +596,29 @@
 
     // --- Event Handlers ---
 
+    /**
+     * Dispatch synthetic key events for Shorts navigation.
+     * 
+     * @param {string} key The key to simulate ("ArrowUp" or "ArrowDown").
+     */
+    function triggerShortsNavigation(key) {
+         log(`[Shorts] Simulating ${key} for navigation`);
+         const keyCode = key === 'ArrowUp' ? 38 : 40;
+         document.dispatchEvent(new KeyboardEvent('keydown', {
+             key: key,
+             code: key,
+             keyCode: keyCode,
+             which: keyCode,
+             bubbles: true,
+             cancelable: true
+         }));
+    }
+
+    /**
+     * Handle mouse wheel events.
+     * 
+     * @param {WheelEvent} e The wheel event.
+     */
     function onWheel(e) {
         // Robust Shorts detection
         const isShorts = window.location.pathname.startsWith('/shorts/');
@@ -565,26 +629,15 @@
             if (isShorts) {
                  const now = Date.now();
                  // Debounce navigation actions to prevent skipping multiple videos at once
-                 // 500ms seems like a reasonable delay for human interaction
                  if (now - lastWheelTime < 250) return; 
                  lastWheelTime = now;
 
-                 // Determine direction
-                 const key = e.deltaY < 0 ? 'ArrowUp' : 'ArrowDown';
-                 const keyCode = key === 'ArrowUp' ? 38 : 40;
-
-                 log(`[Shorts] Simulating ${key} for navigation`);
+                 // Determine direction and trigger
+                 e.preventDefault();
+                 e.stopImmediatePropagation();
                  
-                 // Dispatch keydown event to document to trigger YouTube's native handler
-                 // This mimics user pressing the arrow keys
-                 document.dispatchEvent(new KeyboardEvent('keydown', {
-                     key: key,
-                     code: key,
-                     keyCode: keyCode,
-                     which: keyCode,
-                     bubbles: true,
-                     cancelable: true
-                 }));
+                 const key = e.deltaY < 0 ? 'ArrowUp' : 'ArrowDown';
+                 triggerShortsNavigation(key);
             }
             return;
         }
@@ -614,6 +667,11 @@
         }
     }
 
+    /**
+     * Handle mouse click/down/contextmenu events.
+     * 
+     * @param {MouseEvent} e The mouse event.
+     */
     function onMouse(e) {
         const result = getTargetZone(e);
         if (!result) return;
@@ -639,6 +697,10 @@
         }
     }
 
+    /**
+     * Initialize the script.
+     * Binds references, creates UI elements, and starts monitoring.
+     */
     function init() {
         player = document.getElementById('movie_player') || document.querySelector('.html5-video-player');
         if (!player) return;
@@ -685,9 +747,14 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    // Update visuals on window resize
+    // Update visuals on window resize with debounce
+    let resizeTimer = null;
     window.addEventListener('resize', () => {
-        if (isZonesVisible) updateZoneVisuals();
+        if (!isZonesVisible) return;
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            updateZoneVisuals();
+        }, 200);
     });
 
 })();

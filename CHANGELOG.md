@@ -2,6 +2,12 @@
 
 All notable changes to the **YouTube Mouse Master** project will be documented in this file.
 
+## [0.5.0] - 2026-02-17
+
+### Added
+- **Code Quality**: Added comprehensive JSDoc comments to all functions for better maintainability.
+- **Performance**: Added debounce to window resize listeners to improve performance.
+
 ## [0.4.0] - 2026-02-17
 
 ### Added
