@@ -248,22 +248,76 @@
         }, SETTINGS.OSD_DURATION);
     };
 
+    let zoneMonitorInterval = null;
+
     function updateZoneVisuals() {
         // Remove existing zones
         document.querySelectorAll('.ytm-debug-zone').forEach(el => el.remove());
         document.querySelectorAll('.ytm-debug-overlay-container').forEach(el => el.remove());
 
-        // Update player reference if on Shorts
+        if (!isZonesVisible) {
+            if (zoneMonitorInterval) {
+                clearInterval(zoneMonitorInterval);
+                zoneMonitorInterval = null;
+            }
+            return;
+        }
+
+        // Determine player and context
         const isShorts = window.location.pathname.startsWith('/shorts/');
+        let activePlayer = player;
+
         if (isShorts) {
              const renderer = findActiveShortsRenderer();
              if (renderer) {
                  const p = renderer.querySelector('.html5-video-player');
-                 if (p) player = p;
+                 if (p) activePlayer = p;
+             }
+             
+             // Setup shorts monitoring if not already running
+             if (!zoneMonitorInterval) {
+                 zoneMonitorInterval = setInterval(() => {
+                     const currentRenderer = findActiveShortsRenderer();
+                     if (!currentRenderer) return;
+                     
+                     const currentP = currentRenderer.querySelector('.html5-video-player');
+                     const overlay = document.querySelector('.ytm-debug-overlay-container');
+                     
+                     // Check if active player changed or overlay drifted
+                     let needsUpdate = false;
+                     if (currentP && currentP !== player) {
+                         player = currentP;
+                         needsUpdate = true;
+                     }
+                     
+                     if (overlay && currentP) {
+                         const rect = currentP.getBoundingClientRect();
+                         const overlayRect = overlay.getBoundingClientRect();
+                         // Tolerance of 2px
+                         if (Math.abs(rect.top - overlayRect.top) > 2 || Math.abs(rect.left - overlayRect.left) > 2) {
+                             needsUpdate = true;
+                         }
+                     } else if (!overlay) {
+                         needsUpdate = true;
+                     }
+
+                     if (needsUpdate) {
+                         updateZoneVisuals();
+                     }
+                 }, 500); // Check every 500ms
+             }
+        } else {
+             // Not shorts, stop monitoring
+             if (zoneMonitorInterval) {
+                 clearInterval(zoneMonitorInterval);
+                 zoneMonitorInterval = null;
              }
         }
 
-        if (!isZonesVisible || !player) return;
+        // Update global player reference
+        if (activePlayer && activePlayer !== player) player = activePlayer;
+
+        if (!player) return;
 
         let container = player;
         
@@ -282,7 +336,7 @@
                 zIndex: '2147483646', // Below OSD but above everything else
                 pointerEvents: 'none'
             });
-            document.body.appendChild(container);
+            document.body.appendChild(container); // Attach to body to escape staking contexts
         }
 
         // Helper: Convert action config to readable label
@@ -600,5 +654,10 @@
         }
     });
     observer.observe(document.body, { childList: true, subtree: true });
+
+    // Update visuals on window resize
+    window.addEventListener('resize', () => {
+        if (isZonesVisible) updateZoneVisuals();
+    });
 
 })();
