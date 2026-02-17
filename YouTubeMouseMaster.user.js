@@ -135,6 +135,7 @@
                 transition: `opacity ${SETTINGS.OSD_FADE_OUT / 1000}s ease`,
                 whiteSpace: 'nowrap'
             });
+            // Init in body, will be moved by showOSD
             document.body.appendChild(el);
         } else {
             // If already exists but settings changed, sync font size
@@ -144,10 +145,91 @@
     };
 
     /**
+     * Helper: Find the active Shorts renderer in the viewport
+     */
+    const findActiveShortsRenderer = () => {
+        const renderers = document.querySelectorAll('ytd-reel-video-renderer');
+        let best = null;
+        let minDist = Infinity;
+        const viewportCenterY = window.innerHeight / 2;
+
+        for (const r of renderers) {
+            const rect = r.getBoundingClientRect();
+            // Ignore invisible or completely off-screen elements
+            if (rect.height === 0 || rect.bottom < 0 || rect.top > window.innerHeight) continue;
+
+            const centerY = rect.top + rect.height / 2;
+            const dist = Math.abs(centerY - viewportCenterY);
+
+            if (dist < minDist) {
+                minDist = dist;
+                best = r;
+            }
+        }
+        return best;
+    };
+
+    /**
      * Show OSD message
      */
     const showOSD = (text) => {
         const el = createOSD();
+        const isShorts = window.location.pathname.startsWith('/shorts/');
+
+        if (isShorts) {
+            // For Shorts: Attach to body with fixed positioning
+            if (el.parentElement !== document.body) {
+                document.body.appendChild(el);
+            }
+
+            // Find the active renderer to center the OSD on the video, not the window
+            // Use current player if it seems valid (inside a visible renderer), otherwise search
+            let targetRect = null;
+            
+            if (player && player.closest('ytd-reel-video-renderer')) {
+                 const rect = player.getBoundingClientRect();
+                 if (rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0) {
+                     targetRect = rect;
+                 }
+            }
+            
+            if (!targetRect) {
+                const renderer = findActiveShortsRenderer();
+                if (renderer) targetRect = renderer.getBoundingClientRect();
+            }
+
+            if (targetRect) {
+                Object.assign(el.style, {
+                    position: 'fixed',
+                    top: `${targetRect.top + targetRect.height * 0.2}px`, // 20% from top of video
+                    left: `${targetRect.left + targetRect.width / 2}px`,  // Center horizontally relative to video
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: '2147483647'
+                });
+            } else {
+                // Fallback to window center
+                Object.assign(el.style, {
+                    position: 'fixed',
+                    top: '25%', 
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: '2147483647'
+                });
+            }
+        } else {
+            // For Normal Player: Attach to player to support Fullscreen mode
+            if (player && el.parentElement !== player) {
+                player.appendChild(el);
+            }
+            Object.assign(el.style, {
+                position: 'absolute',
+                top: '20%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                zIndex: '2147483647'
+            });
+        }
+
         el.textContent = text;
 
         clearTimeout(osdTimer);
@@ -167,10 +249,41 @@
     };
 
     function updateZoneVisuals() {
-        const existing = document.querySelectorAll('.ytm-debug-zone');
-        existing.forEach(el => el.remove());
+        // Remove existing zones
+        document.querySelectorAll('.ytm-debug-zone').forEach(el => el.remove());
+        document.querySelectorAll('.ytm-debug-overlay-container').forEach(el => el.remove());
+
+        // Update player reference if on Shorts
+        const isShorts = window.location.pathname.startsWith('/shorts/');
+        if (isShorts) {
+             const renderer = findActiveShortsRenderer();
+             if (renderer) {
+                 const p = renderer.querySelector('.html5-video-player');
+                 if (p) player = p;
+             }
+        }
 
         if (!isZonesVisible || !player) return;
+
+        let container = player;
+        
+        // Setup container based on player type
+        if (isShorts) {
+            // For Shorts: Create a temporary overlay matched to player rect
+            const rect = player.getBoundingClientRect();
+            container = document.createElement('div');
+            container.className = 'ytm-debug-overlay-container';
+            Object.assign(container.style, {
+                position: 'fixed',
+                left: `${rect.left}px`,
+                top: `${rect.top}px`,
+                width: `${rect.width}px`,
+                height: `${rect.height}px`,
+                zIndex: '2147483646', // Below OSD but above everything else
+                pointerEvents: 'none'
+            });
+            document.body.appendChild(container);
+        }
 
         // Helper: Convert action config to readable label
         const getActionLabel = (type, config) => {
@@ -285,23 +398,35 @@
             });
 
             visual.appendChild(infoBox);
-            player.appendChild(visual);
+            container.appendChild(visual);
         });
     }
 
     function getTargetZone(e) {
-        if (!player) return null;
-
         const target = e.target;
-        const validSurface = target.closest('.html5-main-video, .ytp-player-content, .html5-video-player, .ytp-iv-video-content, .ytp-upnext, #movie_player');
+        
+        // Extended validSurface to include ytd-reel-video-renderer for Shorts
+        const validSurface = target.closest('.html5-main-video, .ytp-player-content, .html5-video-player, .ytp-iv-video-content, .ytp-upnext, #movie_player, ytd-reel-video-renderer');
         
         // Exclude native UI elements to prevent conflicts
-        // Added .ytp-miniplayer-ui and related classes to fix issue with miniplayer controls
-        const isNativeUI = target.closest('.ytp-chrome-bottom, .ytp-settings-menu, .ytp-top-share-button, .ytp-ad-overlay-container, .ytp-playlist-menu, .ytp-miniplayer-ui, .ytp-miniplayer-scrim, .ytp-miniplayer-close-button, .ytp-miniplayer-expand-button, .ytp-button, button');
+        // Added 'a' tag to allow link interactions (hashtags, channel names)
+        const isNativeUI = target.closest('.ytp-chrome-bottom, .ytp-settings-menu, .ytp-top-share-button, .ytp-ad-overlay-container, .ytp-playlist-menu, .ytp-miniplayer-ui, .ytp-miniplayer-scrim, .ytp-miniplayer-close-button, .ytp-miniplayer-expand-button, .ytp-button, button, a');
 
         if (!validSurface || isNativeUI) return null;
 
-        const rect = player.getBoundingClientRect();
+        // Dynamic player detection: priority to closest player, then Shorts renderer, then global fallback
+        let localPlayer = target.closest('.html5-video-player') || document.getElementById('movie_player');
+        
+        if (!localPlayer) {
+            const shortsRenderer = target.closest('ytd-reel-video-renderer');
+            if (shortsRenderer) {
+                localPlayer = shortsRenderer.querySelector('.html5-video-player');
+            }
+        }
+
+        if (!localPlayer) return null;
+
+        const rect = localPlayer.getBoundingClientRect();
         const mouseX = (e.clientX - rect.left) / rect.width;
         const mouseY = (e.clientY - rect.top) / rect.height;
 
@@ -314,7 +439,7 @@
             const zH = parseCoord(zone.size.height, 1);
 
             if (mouseX >= zX && mouseX <= (zX + zW) && mouseY >= zY && mouseY <= (zY + zH)) {
-                return zone;
+                return { zone, player: localPlayer };
             }
         }
         return null;
@@ -377,8 +502,11 @@
     // --- Event Handlers ---
 
     function onWheel(e) {
-        const zone = getTargetZone(e);
-        if (!zone) return;
+        const result = getTargetZone(e);
+        if (!result) return;
+        
+        const { zone, player: targetPlayer } = result;
+        if (targetPlayer) player = targetPlayer;
 
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -403,8 +531,11 @@
     }
 
     function onMouse(e) {
-        const zone = getTargetZone(e);
-        if (!zone) return;
+        const result = getTargetZone(e);
+        if (!result) return;
+
+        const { zone, player: targetPlayer } = result;
+        if (targetPlayer) player = targetPlayer;
 
         let actionKey = "";
         if (e.button === 0) actionKey = 'left_click';
