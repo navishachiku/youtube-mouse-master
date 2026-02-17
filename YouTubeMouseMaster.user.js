@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube Mouse Master
 // @namespace    https://github.com/navishachiku/youtube-mouse-master
-// @version      0.3
+// @version      0.4
 // @description  High-performance YouTube player interaction script: support three-zone control, progress seek, prevent event penetration, high-frequency wheel filtering, and fix OSD timer conflicts.
 // @author       navishachiku & Gemini
 // @match        *://www.youtube.com/*
@@ -556,8 +556,38 @@
     // --- Event Handlers ---
 
     function onWheel(e) {
+        // Robust Shorts detection
+        const isShorts = window.location.pathname.startsWith('/shorts/');
         const result = getTargetZone(e);
-        if (!result) return;
+
+        if (!result) {
+            // [UX Feature] Shorts Navigation on non-zone scroll
+            if (isShorts) {
+                 const now = Date.now();
+                 // Debounce navigation actions to prevent skipping multiple videos at once
+                 // 500ms seems like a reasonable delay for human interaction
+                 if (now - lastWheelTime < 250) return; 
+                 lastWheelTime = now;
+
+                 // Determine direction
+                 const key = e.deltaY < 0 ? 'ArrowUp' : 'ArrowDown';
+                 const keyCode = key === 'ArrowUp' ? 38 : 40;
+
+                 log(`[Shorts] Simulating ${key} for navigation`);
+                 
+                 // Dispatch keydown event to document to trigger YouTube's native handler
+                 // This mimics user pressing the arrow keys
+                 document.dispatchEvent(new KeyboardEvent('keydown', {
+                     key: key,
+                     code: key,
+                     keyCode: keyCode,
+                     which: keyCode,
+                     bubbles: true,
+                     cancelable: true
+                 }));
+            }
+            return;
+        }
         
         const { zone, player: targetPlayer } = result;
         if (targetPlayer) player = targetPlayer;
