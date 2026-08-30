@@ -2,10 +2,11 @@
 // @name         Slippy Mouse
 // @namespace    https://github.com/navishachiku/youtube-mouse-master
 // @version      1.1.2
-// @description  Slippery when scrolled. Three-zone mouse control for video players: scroll to adjust volume, seek, and playback speed on YouTube & Bilibili. Fully customizable via an in-page settings panel.
+// @description  Slippery when scrolled. Three-zone mouse control for video players: scroll to adjust volume, seek, and playback speed on YouTube, Bilibili & Bahamut Ani.Gamer. Fully customizable via an in-page settings panel.
 // @author       navishachiku & Gemini
 // @match        *://www.youtube.com/*
 // @match        *://www.bilibili.com/*
+// @match        *://ani.gamer.com.tw/*
 // @grant        none
 // @run-at       document-start
 // ==/UserScript==
@@ -110,11 +111,13 @@
      * [Site Adapter]
      * Site-specific selectors and player API resolution.
      * YouTube exposes a rich player API directly on the #movie_player element.
-     * Bilibili's bpx player exposes no public API on the DOM, so its raw
-     * <video> element is wrapped in a shim providing the same API surface
-     * consumed by Actions.
+     * Bilibili's bpx player and Bahamut Ani.Gamer's video.js player expose no
+     * public API on the DOM, so their raw <video> elements are wrapped in a
+     * shim providing the same API surface consumed by Actions.
      */
-    const SITE = location.hostname.endsWith('bilibili.com') ? 'bilibili' : 'youtube';
+    const SITE = location.hostname.endsWith('bilibili.com') ? 'bilibili'
+        : location.hostname === 'ani.gamer.com.tw' ? 'anigamer'
+            : 'youtube';
 
     const videoShims = new WeakMap();
 
@@ -197,6 +200,30 @@
                 const container = (element && element.closest('#bilibili-player, .bpx-player-container')) || element;
                 const video = (container && container.querySelector('video'))
                     || document.querySelector('#bilibili-player video, .bpx-player-container video');
+                return video ? wrapVideoElement(video) : null;
+            }
+        },
+        anigamer: {
+            controlBar: { host: '.control-bar-rightbtn', append: true },
+            playerSelector: '#ani_video',
+            uiBlacklist: 'button, a, input, textarea, .vjs-control-bar, .top-tool-bar, .video-adHandler-background-blocker, .vjs-modal-dialog, .R18, .stop',
+            resolveVisualPlayer(boundEl) {
+                // The <video-js id="ani_video"> custom element renders as a
+                // 0x0 inline box; the visible player layers anchor to the
+                // positioned .video ancestor instead. Stretch it over that box
+                // so zone math, the OSD, and zone overlays can attach to the
+                // element that enters fullscreen. The UA :fullscreen style
+                // overrides these inline values with !important, so fullscreen
+                // geometry is unaffected.
+                if (!boundEl.style.position) {
+                    Object.assign(boundEl.style, { position: 'absolute', inset: '0', height: '100%' });
+                }
+                return boundEl;
+            },
+            getAPIPlayer(element) {
+                const container = (element && element.closest('#ani_video')) || element;
+                const video = (container && container.querySelector('video'))
+                    || document.querySelector('#ani_video video');
                 return video ? wrapVideoElement(video) : null;
             }
         }
@@ -2022,7 +2049,7 @@
                 h('div', { class: 'head' },
                     h('div', { class: 'logo' }),
                     h('h1', { text: T.title }),
-                    h('span', { class: 'chip', text: SITE === 'bilibili' ? 'Bilibili' : 'YouTube' }),
+                    h('span', { class: 'chip', text: SITE === 'bilibili' ? 'Bilibili' : SITE === 'anigamer' ? 'Ani.Gamer' : 'YouTube' }),
                     closeBtn),
                 h('div', { class: 'body' }, nav, h('main', {}, paneGeneral, paneZones, paneWheel, paneAdvanced)),
                 h('div', { class: 'foot' }, cancelBtn, saveBtn)),
@@ -2136,15 +2163,23 @@
     /**
      * Inject the settings entry button into the player's control bar,
      * following the placement convention used by Immersive Translate
-     * (YouTube: .ytp-right-controls, Bilibili: .bpx-player-control-bottom-right).
+     * (YouTube: .ytp-right-controls, Bilibili: .bpx-player-control-bottom-right,
+     * Ani.Gamer: .control-bar-rightbtn).
      * Falls back to a floating gear over the player when no control bar exists.
      */
     function injectSettingsButton() {
         if (window.location.pathname.startsWith('/shorts/')) return;
-        if (document.querySelector('.ytmm-settings-btn')) return;
 
         const cb = ADAPTER.controlBar;
         const barHost = cb && document.querySelector(cb.host);
+        const existing = document.querySelector('.ytmm-settings-btn');
+        if (existing) {
+            // A floating fallback placed before the site finished building its
+            // control bar (video.js constructs the bar asynchronously) is
+            // upgraded to a control-bar button once the bar appears
+            if (!(barHost && existing.classList.contains('ytmm-settings-btn-floating'))) return;
+            existing.remove();
+        }
         if (barHost) {
             const btn = document.createElement('button');
             btn.title = 'Slippy Mouse';
@@ -2163,6 +2198,19 @@
                 Object.assign(svg.style, { width: '46%', height: '46%', display: 'block' });
                 svg.style.fill = '#fff';
                 btn.appendChild(svg);
+            } else if (SITE === 'anigamer') {
+                // Reuse video.js control sizing (40x40 flex item in the
+                // row-reverse right-button group), then center the glyph
+                btn.className = 'ytmm-settings-btn vjs-control vjs-button';
+                Object.assign(btn.style, {
+                    border: 'none', background: 'none', padding: '0',
+                    cursor: 'pointer', display: 'inline-flex',
+                    alignItems: 'center', justifyContent: 'center'
+                });
+                const svg = createIconSvg('0 0 24 24');
+                Object.assign(svg.style, { width: '18px', height: '18px', display: 'block' });
+                svg.style.fill = '#fff';
+                btn.appendChild(svg);
             } else {
                 // Reuse Bilibili's native control-button class for baseline
                 // sizing, then center the glyph explicitly
@@ -2179,15 +2227,19 @@
                 btn.appendChild(svg);
             }
             wireSettingsButton(btn);
-            const before = cb.before && barHost.querySelector(cb.before);
-            barHost.insertBefore(btn, before || barHost.firstChild);
+            if (cb.append) {
+                barHost.appendChild(btn);
+            } else {
+                const before = cb.before && barHost.querySelector(cb.before);
+                barHost.insertBefore(btn, before || barHost.firstChild);
+            }
             return;
         }
 
         // Fallback: floating button over the player
         if (!player || !player.appendChild) return;
         const btn = document.createElement('button');
-        btn.className = 'ytmm-settings-btn';
+        btn.className = 'ytmm-settings-btn ytmm-settings-btn-floating';
         btn.title = 'Slippy Mouse';
         Object.assign(btn.style, {
             position: 'absolute', top: '12px', right: '12px',
