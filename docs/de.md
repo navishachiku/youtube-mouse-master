@@ -6,7 +6,7 @@ Ein Maus-Erweiterungstool für Online-Videoplayer: Der Player wird in drei Zonen
 
 ## ✨ Hauptfunktionen
 
-* **Multi-Site-Unterstützung**: Funktioniert auf **YouTube** und **Bilibili** (`www.bilibili.com`), mit identischen Zonen und Aktionen auf beiden Seiten.
+* **Multi-Site-Unterstützung**: Funktioniert auf **YouTube**, **Bilibili** (`www.bilibili.com`) und **Bahamut Ani.Gamer** (`ani.gamer.com.tw`), mit identischen Zonen und Aktionen auf allen Seiten.
 
 * **Schnellsteuerung**: Legen Sie eigene Aktionszonen auf dem Player fest, die Mausaktionen wie Klicks und Raddrehungen zugeordnet sind, um Lautstärke, Tempo, Fortschritt usw. schnell anzupassen.
 

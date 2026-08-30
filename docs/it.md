@@ -6,7 +6,7 @@ Uno strumento di potenziamento del mouse per i player video online: il player vi
 
 ## ✨ Funzionalità principali
 
-* **Supporto multi-sito**: Funziona su **YouTube** e **Bilibili** (`www.bilibili.com`), con zone e azioni identiche su entrambi i siti.
+* **Supporto multi-sito**: Funziona su **YouTube**, **Bilibili** (`www.bilibili.com`) e **Bahamut Ani.Gamer** (`ani.gamer.com.tw`), con zone e azioni identiche su tutti i siti.
 
 * **Controlli rapidi**: Imposta zone di azione personalizzate sul player, associate ad azioni del mouse come clic e rotella, per regolare rapidamente volume, velocità, avanzamento ecc.
 

@@ -6,7 +6,7 @@ Una herramienta de mejora del ratón para reproductores de vídeo online: el rep
 
 ## ✨ Características Principales
 
-* **Soporte Multi-Sitio**: Funciona tanto en **YouTube** como en **Bilibili** (`www.bilibili.com`), con zonas y acciones idénticas en ambos sitios.
+* **Soporte Multi-Sitio**: Funciona en **YouTube**, **Bilibili** (`www.bilibili.com`) y **Bahamut Ani.Gamer** (`ani.gamer.com.tw`), con zonas y acciones idénticas en todos los sitios.
 
 * **Controles Rápidos**: Configura zonas de acción personalizadas en el reproductor que corresponden a acciones del ratón, como clics y desplazamiento de rueda, para ajustar rápidamente el volumen, velocidad, progreso, etc.
 

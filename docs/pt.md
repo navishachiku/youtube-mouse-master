@@ -6,7 +6,7 @@ Uma ferramenta de aprimoramento de mouse para players de vídeo online: o player
 
 ## ✨ Principais Características
 
-* **Suporte Multi-Site**: Funciona tanto no **YouTube** quanto no **Bilibili** (`www.bilibili.com`), com zonas e ações idênticas em ambos os sites.
+* **Suporte Multi-Site**: Funciona no **YouTube**, no **Bilibili** (`www.bilibili.com`) e no **Bahamut Ani.Gamer** (`ani.gamer.com.tw`), com zonas e ações idênticas em todos os sites.
 
 * **Controles Rápidos**: Defina zonas de ação personalizadas no player que correspondem a ações do mouse, como cliques e rolagem da roda, para ajustar rapidamente volume, velocidade, progresso, etc.
 

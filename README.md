@@ -10,7 +10,7 @@ A mouse enhancement tool for online video players: the player is divided into th
 
 ## ✨ Key Features
 
-* **Multi-Site Support**: Works on both **YouTube** and **Bilibili** (`www.bilibili.com`), with identical zones and actions on each site.
+* **Multi-Site Support**: Works on **YouTube**, **Bilibili** (`www.bilibili.com`), and **Bahamut Ani.Gamer** (`ani.gamer.com.tw`), with identical zones and actions on every site.
 
 * **Quick Controls**: Set custom action zones on the player that correspond to mouse actions such as clicks and wheel scrolls to quickly adjust volume, speed, progress, etc.
 

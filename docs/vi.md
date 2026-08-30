@@ -6,7 +6,7 @@ Công cụ nâng cao chuột cho trình phát video trực tuyến: trình phát
 
 ## ✨ Tính năng nổi bật
 
-* **Hỗ trợ nhiều trang**: Hoạt động trên cả **YouTube** và **Bilibili** (`www.bilibili.com`), với vùng và hành động giống hệt nhau trên mỗi trang.
+* **Hỗ trợ nhiều trang**: Hoạt động trên **YouTube**, **Bilibili** (`www.bilibili.com`) và **Bahamut Ani.Gamer** (`ani.gamer.com.tw`), với vùng và hành động giống hệt nhau trên mỗi trang.
 
 * **Điều khiển nhanh**: Đặt các vùng hành động tùy chỉnh trên trình phát, gắn với thao tác chuột như nhấp và lăn để điều chỉnh nhanh âm lượng, tốc độ, tiến trình, v.v.
 

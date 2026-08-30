@@ -6,7 +6,7 @@ Un outil d'amélioration de la souris pour les lecteurs vidéo en ligne : le lec
 
 ## ✨ Fonctionnalités clés
 
-* **Multi-sites** : Fonctionne sur **YouTube** et **Bilibili** (`www.bilibili.com`), avec des zones et des actions identiques sur chaque site.
+* **Multi-sites** : Fonctionne sur **YouTube**, **Bilibili** (`www.bilibili.com`) et **Bahamut Ani.Gamer** (`ani.gamer.com.tw`), avec des zones et des actions identiques sur chaque site.
 
 * **Contrôles rapides** : Définissez des zones d'action personnalisées sur le lecteur, associées aux actions de la souris (clics, molette) pour ajuster rapidement le volume, la vitesse, la progression, etc.
 
