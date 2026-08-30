@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Slippy Mouse
 // @namespace    https://github.com/navishachiku/youtube-mouse-master
-// @version      1.1.2
+// @version      1.2.0
 // @description  Slippery when scrolled. Three-zone mouse control for video players: scroll to adjust volume, seek, and playback speed on YouTube, Bilibili & Bahamut Ani.Gamer. Fully customizable via an in-page settings panel.
 // @author       navishachiku & Gemini
 // @match        *://www.youtube.com/*

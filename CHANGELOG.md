@@ -2,6 +2,11 @@
 
 All notable changes to the **Slippy Mouse** project (formerly YouTube Mouse Master) will be documented in this file.
 
+## [1.2.0] - 2026-08-30
+
+### Added
+- **Bahamut Ani.Gamer support**: The three-zone controls, settings entry button, zone overlay, and OSD now work on `ani.gamer.com.tw` (動畫瘋). Its video.js player exposes no public API on the DOM, so the raw video element is driven through the same shim used for Bilibili.
+
 ## [1.1.2] - 2026-08-18
 
 ### Fixed
